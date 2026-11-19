@@ -1,0 +1,33 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secrets and environment files
+.env
+.env.*
+*.key
+*.pem
+.streamlit/secrets.toml
+
+# Runtime data (local SQLite database and generated reports)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+# Ignore generated output, but keep sample reports
+output/*
+!output/.gitkeep
+!output/sample_alerts_report.csv
+!output/sample_alerts_report.json
+!output/sample_incident_report.pdf
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

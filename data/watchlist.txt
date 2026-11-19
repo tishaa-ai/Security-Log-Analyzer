@@ -1,0 +1,7 @@
+# Local IP watchlist (SYNTHETIC). One IP or CIDR per line. Used for matching only -
+# the analyzer never scans or blocks these addresses.
+203.0.113.45      # brute-force source seen in previous incident (synthetic)
+203.0.113.0/28    # documentation range flagged by threat-intel exercise (synthetic)
+198.51.100.77     # password-spraying source (synthetic)
+198.51.100.200    # SSH invalid-user sweep source (synthetic)
+192.0.2.250       # watchlisted but no activity expected

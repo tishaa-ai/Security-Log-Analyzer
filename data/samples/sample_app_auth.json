@@ -1,0 +1,517 @@
+{
+  "_synthetic_notice": "SYNTHETIC DATA - generated for training/testing the Security Log Analyzer. Not real logs. IPs are RFC 5737 documentation addresses.",
+  "source": "customer-portal auth log (synthetic)",
+  "events": [
+    {
+      "timestamp": "2026-11-18T08:40:07Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "alice",
+      "source_ip": "192.0.2.10",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for alice"
+    },
+    {
+      "timestamp": "2026-11-18T11:40:07Z",
+      "event_type": "user_logout",
+      "username": "alice",
+      "source_ip": "192.0.2.10",
+      "service": "customer-portal",
+      "message": "User alice logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:47:17Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "alice",
+      "source_ip": "192.0.2.10",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for alice"
+    },
+    {
+      "timestamp": "2026-11-18T16:54:17Z",
+      "event_type": "user_logout",
+      "username": "alice",
+      "source_ip": "192.0.2.10",
+      "service": "customer-portal",
+      "message": "User alice logged out"
+    },
+    {
+      "timestamp": "2026-11-18T08:14:08Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "bob",
+      "source_ip": "192.0.2.11",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for bob"
+    },
+    {
+      "timestamp": "2026-11-18T11:37:08Z",
+      "event_type": "user_logout",
+      "username": "bob",
+      "source_ip": "192.0.2.11",
+      "service": "customer-portal",
+      "message": "User bob logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:06:43Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "bob",
+      "source_ip": "192.0.2.11",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for bob"
+    },
+    {
+      "timestamp": "2026-11-18T16:29:43Z",
+      "event_type": "user_logout",
+      "username": "bob",
+      "source_ip": "192.0.2.11",
+      "service": "customer-portal",
+      "message": "User bob logged out"
+    },
+    {
+      "timestamp": "2026-11-18T08:34:05Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "carol",
+      "source_ip": "192.0.2.12",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for carol"
+    },
+    {
+      "timestamp": "2026-11-18T11:52:05Z",
+      "event_type": "user_logout",
+      "username": "carol",
+      "source_ip": "192.0.2.12",
+      "service": "customer-portal",
+      "message": "User carol logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:27:02Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "carol",
+      "source_ip": "192.0.2.12",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for carol"
+    },
+    {
+      "timestamp": "2026-11-18T16:27:02Z",
+      "event_type": "user_logout",
+      "username": "carol",
+      "source_ip": "192.0.2.12",
+      "service": "customer-portal",
+      "message": "User carol logged out"
+    },
+    {
+      "timestamp": "2026-11-18T08:05:13Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for dave"
+    },
+    {
+      "timestamp": "2026-11-18T11:12:13Z",
+      "event_type": "user_logout",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "message": "User dave logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:32:38Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for dave"
+    },
+    {
+      "timestamp": "2026-11-18T16:32:38Z",
+      "event_type": "user_logout",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "message": "User dave logged out"
+    },
+    {
+      "timestamp": "2026-11-18T08:35:12Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "erin",
+      "source_ip": "192.0.2.14",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for erin"
+    },
+    {
+      "timestamp": "2026-11-18T11:57:12Z",
+      "event_type": "user_logout",
+      "username": "erin",
+      "source_ip": "192.0.2.14",
+      "service": "customer-portal",
+      "message": "User erin logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:41:44Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "erin",
+      "source_ip": "192.0.2.14",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for erin"
+    },
+    {
+      "timestamp": "2026-11-18T16:58:44Z",
+      "event_type": "user_logout",
+      "username": "erin",
+      "source_ip": "192.0.2.14",
+      "service": "customer-portal",
+      "message": "User erin logged out"
+    },
+    {
+      "timestamp": "2026-11-18T08:26:14Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "frank",
+      "source_ip": "192.0.2.15",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for frank"
+    },
+    {
+      "timestamp": "2026-11-18T11:40:14Z",
+      "event_type": "user_logout",
+      "username": "frank",
+      "source_ip": "192.0.2.15",
+      "service": "customer-portal",
+      "message": "User frank logged out"
+    },
+    {
+      "timestamp": "2026-11-18T13:37:17Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "frank",
+      "source_ip": "192.0.2.15",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for frank"
+    },
+    {
+      "timestamp": "2026-11-18T17:02:17Z",
+      "event_type": "user_logout",
+      "username": "frank",
+      "source_ip": "192.0.2.15",
+      "service": "customer-portal",
+      "message": "User frank logged out"
+    },
+    {
+      "timestamp": "2026-11-18T09:41:05Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Invalid password for dave"
+    },
+    {
+      "timestamp": "2026-11-18T09:41:25Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "dave",
+      "source_ip": "192.0.2.13",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for dave"
+    },
+    {
+      "@timestamp": "2026-11-18T10:15:00Z",
+      "event": {
+        "action": "authentication",
+        "outcome": "success"
+      },
+      "user": {
+        "name": "erin"
+      },
+      "source": {
+        "ip": "192.0.2.14"
+      },
+      "host": {
+        "name": "sso01.example.com"
+      },
+      "message": "SSO authentication succeeded"
+    },
+    {
+      "@timestamp": "2026-11-18T10:32:00Z",
+      "event": {
+        "action": "authentication",
+        "outcome": "success"
+      },
+      "user": {
+        "name": "frank"
+      },
+      "source": {
+        "ip": "192.0.2.15"
+      },
+      "host": {
+        "name": "sso01.example.com"
+      },
+      "message": "SSO authentication succeeded"
+    },
+    {
+      "timestamp": "2026-11-18T02:14:00Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:14:25Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:14:50Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:15:15Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:15:40Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:16:05Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:16:30Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:16:55Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:17:20Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:17:45Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:18:10Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:18:35Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for admin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T02:20:10Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "admin",
+      "source_ip": "203.0.113.45",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login success for admin"
+    },
+    {
+      "timestamp": "2026-11-18T13:05:00Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "alice",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for alice: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:05:40Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "bob",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for bob: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:06:20Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "carol",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for carol: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:07:00Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "dave",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for dave: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:07:40Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "erin",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for erin: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:08:20Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "frank",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for frank: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:09:00Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "grace",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for grace: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T13:09:40Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "heidi",
+      "source_ip": "198.51.100.77",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "Login failed for heidi: bad password"
+    },
+    {
+      "timestamp": "2026-11-18T23:40:12Z",
+      "event_type": "user_login",
+      "outcome": "success",
+      "username": "bob",
+      "source_ip": "192.0.2.11",
+      "service": "customer-portal",
+      "hostname": "app01.example.com",
+      "message": "User login success for bob"
+    },
+    {
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "eve",
+      "source_ip": "192.0.2.50"
+    },
+    {
+      "timestamp": "2026-11-18T11:00:00Z",
+      "event_type": "user_login",
+      "outcome": "failure",
+      "username": "mallory",
+      "source_ip": "999.10.1.5"
+    },
+    {
+      "timestamp": "yesterday afternoon",
+      "event_type": "user_login",
+      "username": "trent",
+      "source_ip": "192.0.2.51"
+    },
+    "corrupted-record-not-an-object",
+    {}
+  ]
+}

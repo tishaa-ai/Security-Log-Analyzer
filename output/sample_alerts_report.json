@@ -1,0 +1,3307 @@
+{
+  "title": "Security Log Analyzer & Alert Triage Dashboard",
+  "generated_at_utc": "2026-11-19 05:25:07",
+  "scope": "Synthetic sample datasets",
+  "disclaimer": "Alerts in this report are DETECTION INDICATORS produced by rule-based analysis of the supplied logs. They are not confirmed attacks and require analyst validation. MITRE ATT&CK mappings mean the observed behaviour is consistent with a technique, not that the technique was proven. No IP addresses were scanned or blocked.",
+  "summary": {
+    "files_ingested": 3,
+    "total_records": 301,
+    "parsed_records": 289,
+    "rejected_records": 12,
+    "events_stored": 289,
+    "alerts_in_report": 19,
+    "alerts_by_severity": {
+      "Critical": 2,
+      "High": 7,
+      "Medium": 8,
+      "Low": 2
+    },
+    "alerts_by_status": {
+      "New": 19
+    },
+    "alerts_by_rule": {
+      "AUTH-001": 4,
+      "AUTH-002": 2,
+      "AUTH-003": 2,
+      "AUTH-004": 4,
+      "HTTP-001": 2,
+      "HTTP-002": 1,
+      "NET-001": 4
+    },
+    "top_source_ips": [
+      {
+        "source_ip": "203.0.113.12",
+        "alerts": 4
+      },
+      {
+        "source_ip": "203.0.113.45",
+        "alerts": 4
+      },
+      {
+        "source_ip": "198.51.100.200",
+        "alerts": 3
+      },
+      {
+        "source_ip": "198.51.100.77",
+        "alerts": 3
+      },
+      {
+        "source_ip": "198.51.100.23",
+        "alerts": 1
+      },
+      {
+        "source_ip": "203.0.113.99",
+        "alerts": 1
+      },
+      {
+        "source_ip": "203.0.113.140",
+        "alerts": 1
+      },
+      {
+        "source_ip": "192.0.2.12",
+        "alerts": 1
+      },
+      {
+        "source_ip": "192.0.2.11",
+        "alerts": 1
+      }
+    ]
+  },
+  "detection_rules": [
+    {
+      "rule_id": "AUTH-001",
+      "name": "Repeated Failed Login Attempts",
+      "category": "Authentication",
+      "description": "Many failed logins from the same source IP in a short time window.",
+      "logic": "Groups auth_failure events by source IP and slides a time window over them. Alerts when the peak count inside the window reaches the threshold.",
+      "severity_logic": "Medium when peak >= threshold; High when peak >= high threshold.",
+      "mitre_techniques": [
+        "T1110",
+        "T1110.001"
+      ],
+      "mitre_note": "Repeated password failures from one source are the defining behaviour of password guessing.",
+      "alerts_in_report": 4
+    },
+    {
+      "rule_id": "AUTH-002",
+      "name": "Successful Login After Repeated Failures",
+      "category": "Authentication",
+      "description": "A successful login from an IP that just produced several failed logins.",
+      "logic": "For each auth_success, counts auth_failure events from the same IP in the preceding window.",
+      "severity_logic": "High by default; Critical when failures >= brute-force threshold and target the same account.",
+      "mitre_techniques": [
+        "T1110",
+        "T1078"
+      ],
+      "mitre_note": "Failures followed by success can indicate a guessed password now being used as a valid account.",
+      "alerts_in_report": 2
+    },
+    {
+      "rule_id": "AUTH-003",
+      "name": "Multiple Accounts Targeted From One IP",
+      "category": "Authentication",
+      "description": "Failed logins against many different usernames from a single source IP.",
+      "logic": "Counts distinct usernames among auth_failure events per IP in a sliding window.",
+      "severity_logic": "High when distinct accounts >= threshold; Critical if any login from that IP succeeded in/after the window.",
+      "mitre_techniques": [
+        "T1110.003"
+      ],
+      "mitre_note": "Few attempts across many accounts from one source matches password spraying. (Credential stuffing, T1110.004, cannot be distinguished from logs alone.)",
+      "alerts_in_report": 2
+    },
+    {
+      "rule_id": "AUTH-004",
+      "name": "Unusual Login Time",
+      "category": "Authentication",
+      "description": "Successful login outside configured business hours (UTC) or on a weekend.",
+      "logic": "Compares the hour/weekday of each auth_success event timestamp with the configured business hours.",
+      "severity_logic": "Low by default; Medium for privileged accounts (e.g. root, admin).",
+      "mitre_techniques": [],
+      "mitre_note": "No ATT&CK technique is assigned: login time alone does not show how access was obtained.",
+      "alerts_in_report": 4
+    },
+    {
+      "rule_id": "NET-001",
+      "name": "Watchlisted Source IP Activity",
+      "category": "Network",
+      "description": "Activity from an IP or CIDR range present in the local watchlist.",
+      "logic": "Matches every event's validated source IP against the configured local watchlist. No external lookups, scans, or blocking are performed.",
+      "severity_logic": "Low for any activity; Medium if failures/4xx errors; High if a login succeeded.",
+      "mitre_techniques": [],
+      "mitre_note": "No technique is assigned: a watchlist match is reputation context, not evidence of a technique.",
+      "alerts_in_report": 4
+    },
+    {
+      "rule_id": "HTTP-001",
+      "name": "Repeated HTTP 401/403 Responses",
+      "category": "Web",
+      "description": "Many HTTP 401 (Unauthorized) or 403 (Forbidden) responses for one client IP.",
+      "logic": "Slides a time window over 401/403 responses per IP and alerts when the peak reaches the threshold.",
+      "severity_logic": "Medium when peak >= threshold; High when peak >= 2x threshold.",
+      "mitre_techniques": [
+        "T1110"
+      ],
+      "mitre_note": "T1110 is assigned only when most failures are 401s on login/auth endpoints; 403s on other paths are access-control denials and receive no technique.",
+      "alerts_in_report": 2
+    },
+    {
+      "rule_id": "HTTP-002",
+      "name": "Suspicious HTTP Request Pattern",
+      "category": "Web",
+      "description": "Path enumeration, probing of sensitive files, or exploit-like request strings.",
+      "logic": "Per IP and time window: many distinct paths with mostly 4xx responses (enumeration), requests for >= 2 sensitive paths (e.g. /.env, /.git/config), or traversal/injection patterns.",
+      "severity_logic": "Medium for enumeration or sensitive-path probing; High when traversal/injection patterns are present.",
+      "mitre_techniques": [
+        "T1595.003",
+        "T1190"
+      ],
+      "mitre_note": "Enumeration and sensitive-path probing map to Wordlist Scanning; exploit-like strings map to an *attempt* at Exploit Public-Facing Application. Neither confirms success.",
+      "alerts_in_report": 1
+    }
+  ],
+  "mitre_references": [
+    {
+      "technique_id": "T1078",
+      "name": "Valid Accounts",
+      "tactics": [
+        "Defense Evasion",
+        "Persistence",
+        "Privilege Escalation",
+        "Initial Access"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1078/",
+      "alert_count": 2,
+      "example_rationale": "A successful login after repeated failures is consistent with use of a valid (possibly guessed) account credential."
+    },
+    {
+      "technique_id": "T1110",
+      "name": "Brute Force",
+      "tactics": [
+        "Credential Access"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1110/",
+      "alert_count": 5,
+      "example_rationale": "9 failed attempts preceded the successful login."
+    },
+    {
+      "technique_id": "T1110.001",
+      "name": "Brute Force: Password Guessing",
+      "tactics": [
+        "Credential Access"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1110/001/",
+      "alert_count": 2,
+      "example_rationale": "12 password failures from 203.0.113.45 against 1 account(s) is consistent with password guessing."
+    },
+    {
+      "technique_id": "T1110.003",
+      "name": "Brute Force: Password Spraying",
+      "tactics": [
+        "Credential Access"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1110/003/",
+      "alert_count": 2,
+      "example_rationale": "Failures spread across 5 accounts from one source match the password-spraying pattern."
+    },
+    {
+      "technique_id": "T1190",
+      "name": "Exploit Public-Facing Application",
+      "tactics": [
+        "Initial Access"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1190/",
+      "alert_count": 1,
+      "example_rationale": "Exploit-like request strings indicate an ATTEMPT to exploit a public-facing application; success is not implied."
+    },
+    {
+      "technique_id": "T1595.003",
+      "name": "Active Scanning: Wordlist Scanning",
+      "tactics": [
+        "Reconnaissance"
+      ],
+      "url": "https://attack.mitre.org/techniques/T1595/003/",
+      "alert_count": 1,
+      "example_rationale": "Requests for many or well-known sensitive paths are consistent with wordlist-based content discovery."
+    }
+  ],
+  "alerts": [
+    {
+      "alert_id": "ALT-A06A21DFDC",
+      "rule_id": "AUTH-002",
+      "rule_name": "Successful Login After Repeated Failures",
+      "severity": "Critical",
+      "risk_score": 100,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for Critical severity",
+          "points": 85
+        },
+        {
+          "reason": "Volume: 10 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 03:05:30",
+      "first_seen": "2026-11-18 03:02:00",
+      "last_seen": "2026-11-18 03:05:30",
+      "source_ip": "203.0.113.12",
+      "username": "root",
+      "description": "Successful login for 'root' from 203.0.113.12 at 2026-11-18 03:05:30 followed 9 failed attempt(s) from the same IP within 30 minutes (same account). This may indicate a guessed or compromised credential and must be validated.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 03:05:30",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Accepted password for root from 203.0.113.12 port 50100 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 13
+        },
+        {
+          "timestamp": "2026-11-18 03:02:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 3
+        },
+        {
+          "timestamp": "2026-11-18 03:02:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 4
+        },
+        {
+          "timestamp": "2026-11-18 03:02:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 5
+        },
+        {
+          "timestamp": "2026-11-18 03:03:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 6
+        },
+        {
+          "timestamp": "2026-11-18 03:03:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 8
+        },
+        {
+          "timestamp": "2026-11-18 03:03:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50005 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 9
+        },
+        {
+          "timestamp": "2026-11-18 03:04:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50006 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 10
+        },
+        {
+          "timestamp": "2026-11-18 03:04:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50007 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 11
+        },
+        {
+          "timestamp": "2026-11-18 03:04:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50008 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 12
+        }
+      ],
+      "event_count": 10,
+      "recommendations": [
+        "Contact the account owner out-of-band to confirm whether they logged in.",
+        "Review session activity after the successful login (commands, data access, privilege changes).",
+        "If not confirmed by the user, treat the credential as potentially compromised: reset and enforce MFA.",
+        "Search for the same source IP across other systems and accounts."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110",
+          "name": "Brute Force",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/",
+          "rationale": "9 failed attempts preceded the successful login."
+        },
+        {
+          "technique_id": "T1078",
+          "name": "Valid Accounts",
+          "tactics": [
+            "Defense Evasion",
+            "Persistence",
+            "Privilege Escalation",
+            "Initial Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1078/",
+          "rationale": "A successful login after repeated failures is consistent with use of a valid (possibly guessed) account credential."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-BE07DFD423",
+      "rule_id": "AUTH-002",
+      "rule_name": "Successful Login After Repeated Failures",
+      "severity": "Critical",
+      "risk_score": 100,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for Critical severity",
+          "points": 85
+        },
+        {
+          "reason": "Volume: 13 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 02:20:10",
+      "first_seen": "2026-11-18 02:14:00",
+      "last_seen": "2026-11-18 02:20:10",
+      "source_ip": "203.0.113.45",
+      "username": "admin",
+      "description": "Successful login for 'admin' from 203.0.113.45 at 2026-11-18 02:20:10 followed 12 failed attempt(s) from the same IP within 30 minutes (same account). This may indicate a guessed or compromised credential and must be validated.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 02:20:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login success for admin",
+          "file_name": "sample_app_auth.json",
+          "line_number": 41
+        },
+        {
+          "timestamp": "2026-11-18 02:14:00",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 29
+        },
+        {
+          "timestamp": "2026-11-18 02:14:25",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 30
+        },
+        {
+          "timestamp": "2026-11-18 02:14:50",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 31
+        },
+        {
+          "timestamp": "2026-11-18 02:15:15",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 32
+        },
+        {
+          "timestamp": "2026-11-18 02:15:40",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 33
+        },
+        {
+          "timestamp": "2026-11-18 02:16:05",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 34
+        },
+        {
+          "timestamp": "2026-11-18 02:16:30",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 35
+        },
+        {
+          "timestamp": "2026-11-18 02:16:55",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 36
+        },
+        {
+          "timestamp": "2026-11-18 02:17:20",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 37
+        },
+        {
+          "timestamp": "2026-11-18 02:17:45",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 38
+        },
+        {
+          "timestamp": "2026-11-18 02:18:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 39
+        },
+        {
+          "timestamp": "2026-11-18 02:18:35",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 40
+        }
+      ],
+      "event_count": 13,
+      "recommendations": [
+        "Contact the account owner out-of-band to confirm whether they logged in.",
+        "Review session activity after the successful login (commands, data access, privilege changes).",
+        "If not confirmed by the user, treat the credential as potentially compromised: reset and enforce MFA.",
+        "Search for the same source IP across other systems and accounts."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110",
+          "name": "Brute Force",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/",
+          "rationale": "12 failed attempts preceded the successful login."
+        },
+        {
+          "technique_id": "T1078",
+          "name": "Valid Accounts",
+          "tactics": [
+            "Defense Evasion",
+            "Persistence",
+            "Privilege Escalation",
+            "Initial Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1078/",
+          "rationale": "A successful login after repeated failures is consistent with use of a valid (possibly guessed) account credential."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-5BCFFB96B7",
+      "rule_id": "AUTH-001",
+      "rule_name": "Repeated Failed Login Attempts",
+      "severity": "High",
+      "risk_score": 93,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Volume: 12 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 02:18:35",
+      "first_seen": "2026-11-18 02:14:00",
+      "last_seen": "2026-11-18 02:18:35",
+      "source_ip": "203.0.113.45",
+      "username": "admin",
+      "description": "12 failed login attempts from 203.0.113.45 over 4.6 minutes (peak 12 within a 10-minute window; threshold 5). Targeted account(s): admin.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 02:14:00",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 29
+        },
+        {
+          "timestamp": "2026-11-18 02:14:25",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 30
+        },
+        {
+          "timestamp": "2026-11-18 02:14:50",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 31
+        },
+        {
+          "timestamp": "2026-11-18 02:15:15",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 32
+        },
+        {
+          "timestamp": "2026-11-18 02:15:40",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 33
+        },
+        {
+          "timestamp": "2026-11-18 02:16:05",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 34
+        },
+        {
+          "timestamp": "2026-11-18 02:16:30",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 35
+        },
+        {
+          "timestamp": "2026-11-18 02:16:55",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 36
+        },
+        {
+          "timestamp": "2026-11-18 02:17:20",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 37
+        },
+        {
+          "timestamp": "2026-11-18 02:17:45",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 38
+        },
+        {
+          "timestamp": "2026-11-18 02:18:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 39
+        },
+        {
+          "timestamp": "2026-11-18 02:18:35",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 40
+        }
+      ],
+      "event_count": 12,
+      "recommendations": [
+        "Confirm whether the source IP belongs to a known user, VPN, or internal scanner.",
+        "Check whether any login from this IP later succeeded (see AUTH-002).",
+        "Review the targeted account(s) for lockouts and recent password resets.",
+        "If unexplained, escalate per your incident process; consider rate-limiting or MFA (manual decision)."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110.001",
+          "name": "Brute Force: Password Guessing",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/001/",
+          "rationale": "12 password failures from 203.0.113.45 against 1 account(s) is consistent with password guessing."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-B52F123BD5",
+      "rule_id": "NET-001",
+      "rule_name": "Watchlisted Source IP Activity",
+      "severity": "High",
+      "risk_score": 88,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Volume: 10 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 03:02:00",
+      "first_seen": "2026-11-18 03:02:00",
+      "last_seen": "2026-11-18 03:05:30",
+      "source_ip": "203.0.113.12",
+      "username": "root",
+      "description": "Source IP 203.0.113.12 matches local watchlist entry 203.0.113.0/28. 10 event(s) observed between 2026-11-18 03:02:00 and 2026-11-18 03:05:30 (9 auth_failure, 1 auth_success). Includes at least one SUCCESSFUL login. No automatic blocking was performed.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 03:02:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 3
+        },
+        {
+          "timestamp": "2026-11-18 03:02:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 4
+        },
+        {
+          "timestamp": "2026-11-18 03:02:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 5
+        },
+        {
+          "timestamp": "2026-11-18 03:03:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 6
+        },
+        {
+          "timestamp": "2026-11-18 03:03:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 8
+        },
+        {
+          "timestamp": "2026-11-18 03:03:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50005 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 9
+        },
+        {
+          "timestamp": "2026-11-18 03:04:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50006 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 10
+        },
+        {
+          "timestamp": "2026-11-18 03:04:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50007 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 11
+        },
+        {
+          "timestamp": "2026-11-18 03:04:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50008 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 12
+        },
+        {
+          "timestamp": "2026-11-18 03:05:30",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Accepted password for root from 203.0.113.12 port 50100 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 13
+        }
+      ],
+      "event_count": 10,
+      "recommendations": [
+        "Review why the IP is on the watchlist and when the entry was added.",
+        "Inspect every event from this IP and identify the accounts or URLs involved.",
+        "If a login succeeded, validate it with the account owner immediately.",
+        "Do not block automatically - document findings and follow your change process."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-BD2CC81EE2",
+      "rule_id": "NET-001",
+      "rule_name": "Watchlisted Source IP Activity",
+      "severity": "High",
+      "risk_score": 88,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Volume: 13 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 02:14:00",
+      "first_seen": "2026-11-18 02:14:00",
+      "last_seen": "2026-11-18 02:20:10",
+      "source_ip": "203.0.113.45",
+      "username": "admin",
+      "description": "Source IP 203.0.113.45 matches local watchlist entry 203.0.113.45. 13 event(s) observed between 2026-11-18 02:14:00 and 2026-11-18 02:20:10 (12 auth_failure, 1 auth_success). Includes at least one SUCCESSFUL login. No automatic blocking was performed.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 02:14:00",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 29
+        },
+        {
+          "timestamp": "2026-11-18 02:14:25",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 30
+        },
+        {
+          "timestamp": "2026-11-18 02:14:50",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 31
+        },
+        {
+          "timestamp": "2026-11-18 02:15:15",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 32
+        },
+        {
+          "timestamp": "2026-11-18 02:15:40",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 33
+        },
+        {
+          "timestamp": "2026-11-18 02:16:05",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 34
+        },
+        {
+          "timestamp": "2026-11-18 02:16:30",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 35
+        },
+        {
+          "timestamp": "2026-11-18 02:16:55",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 36
+        },
+        {
+          "timestamp": "2026-11-18 02:17:20",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 37
+        },
+        {
+          "timestamp": "2026-11-18 02:17:45",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 38
+        },
+        {
+          "timestamp": "2026-11-18 02:18:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 39
+        },
+        {
+          "timestamp": "2026-11-18 02:18:35",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for admin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 40
+        },
+        {
+          "timestamp": "2026-11-18 02:20:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login success for admin",
+          "file_name": "sample_app_auth.json",
+          "line_number": 41
+        }
+      ],
+      "event_count": 13,
+      "recommendations": [
+        "Review why the IP is on the watchlist and when the entry was added.",
+        "Inspect every event from this IP and identify the accounts or URLs involved.",
+        "If a login succeeded, validate it with the account owner immediately.",
+        "Do not block automatically - document findings and follow your change process."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-1F14E60A1A",
+      "rule_id": "AUTH-003",
+      "rule_name": "Multiple Accounts Targeted From One IP",
+      "severity": "High",
+      "risk_score": 85,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 21:33:02",
+      "first_seen": "2026-11-18 21:30:02",
+      "last_seen": "2026-11-18 21:33:02",
+      "source_ip": "198.51.100.200",
+      "username": "guest, oracle, postgres, test, ubuntu",
+      "description": "5 failed logins from 198.51.100.200 targeted 5 different accounts (peak 5 distinct accounts within 30 minutes; threshold 3).",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 21:30:02",
+          "source_ip": "198.51.100.200",
+          "username": "test",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user test from 198.51.100.200 port 41000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 21:30:47",
+          "source_ip": "198.51.100.200",
+          "username": "oracle",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user oracle from 198.51.100.200 port 41001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 21:31:32",
+          "source_ip": "198.51.100.200",
+          "username": "guest",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user guest from 198.51.100.200 port 41002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 49
+        },
+        {
+          "timestamp": "2026-11-18 21:32:17",
+          "source_ip": "198.51.100.200",
+          "username": "ubuntu",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user ubuntu from 198.51.100.200 port 41003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 51
+        },
+        {
+          "timestamp": "2026-11-18 21:33:02",
+          "source_ip": "198.51.100.200",
+          "username": "postgres",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user postgres from 198.51.100.200 port 41004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 53
+        }
+      ],
+      "event_count": 5,
+      "recommendations": [
+        "List every targeted account and check for any successful authentication from this IP.",
+        "Check whether the usernames are valid accounts (indicates prior reconnaissance).",
+        "Review lockout events and help-desk tickets for the targeted users.",
+        "Consider (manually) adding the IP to perimeter controls after validation."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110.003",
+          "name": "Brute Force: Password Spraying",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/003/",
+          "rationale": "Failures spread across 5 accounts from one source match the password-spraying pattern."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-4D8951A967",
+      "rule_id": "AUTH-003",
+      "rule_name": "Multiple Accounts Targeted From One IP",
+      "severity": "High",
+      "risk_score": 85,
+      "priority": "P1",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 13:09:40",
+      "first_seen": "2026-11-18 13:05:00",
+      "last_seen": "2026-11-18 13:09:40",
+      "source_ip": "198.51.100.77",
+      "username": "alice, bob, carol, dave, erin (+3 more)",
+      "description": "8 failed logins from 198.51.100.77 targeted 8 different accounts (peak 8 distinct accounts within 30 minutes; threshold 3).",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 13:05:00",
+          "source_ip": "198.51.100.77",
+          "username": "alice",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for alice: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 42
+        },
+        {
+          "timestamp": "2026-11-18 13:05:40",
+          "source_ip": "198.51.100.77",
+          "username": "bob",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for bob: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 43
+        },
+        {
+          "timestamp": "2026-11-18 13:06:20",
+          "source_ip": "198.51.100.77",
+          "username": "carol",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for carol: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 44
+        },
+        {
+          "timestamp": "2026-11-18 13:07:00",
+          "source_ip": "198.51.100.77",
+          "username": "dave",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for dave: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 13:07:40",
+          "source_ip": "198.51.100.77",
+          "username": "erin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for erin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 46
+        },
+        {
+          "timestamp": "2026-11-18 13:08:20",
+          "source_ip": "198.51.100.77",
+          "username": "frank",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for frank: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 13:09:00",
+          "source_ip": "198.51.100.77",
+          "username": "grace",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for grace: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 48
+        },
+        {
+          "timestamp": "2026-11-18 13:09:40",
+          "source_ip": "198.51.100.77",
+          "username": "heidi",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for heidi: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 49
+        }
+      ],
+      "event_count": 8,
+      "recommendations": [
+        "List every targeted account and check for any successful authentication from this IP.",
+        "Check whether the usernames are valid accounts (indicates prior reconnaissance).",
+        "Review lockout events and help-desk tickets for the targeted users.",
+        "Consider (manually) adding the IP to perimeter controls after validation."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110.003",
+          "name": "Brute Force: Password Spraying",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/003/",
+          "rationale": "Failures spread across 8 accounts from one source match the password-spraying pattern."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-C04E284325",
+      "rule_id": "HTTP-002",
+      "rule_name": "Suspicious HTTP Request Pattern",
+      "severity": "High",
+      "risk_score": 71,
+      "priority": "P2",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Volume: 22 supporting events",
+          "points": 6
+        }
+      ],
+      "timestamp": "2026-11-18 15:13:09",
+      "first_seen": "2026-11-18 15:10:00",
+      "last_seen": "2026-11-18 15:13:09",
+      "source_ip": "198.51.100.23",
+      "username": null,
+      "description": "Unusual HTTP activity from 198.51.100.23: 22 distinct paths requested within 10 minutes with 100% error responses; probing of 9 sensitive path(s) such as /.aws/credentials, /.env, /.git/config; 2 request(s) containing traversal/injection patterns, e.g. /search?q=%27%20OR%20%271%27%3D%271.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 15:13:00",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/static/../../../../etc/passwd",
+          "message": "GET /static/../../../../etc/passwd 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 145
+        },
+        {
+          "timestamp": "2026-11-18 15:13:09",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/search?q=%27%20OR%20%271%27%3D%271",
+          "message": "GET /search?q=%27%20OR%20%271%27%3D%271 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 146
+        },
+        {
+          "timestamp": "2026-11-18 15:10:00",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/.env",
+          "message": "GET /.env 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 125
+        },
+        {
+          "timestamp": "2026-11-18 15:10:09",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/.git/config",
+          "message": "GET /.git/config 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 126
+        },
+        {
+          "timestamp": "2026-11-18 15:10:18",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/wp-admin/",
+          "message": "GET /wp-admin/ 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 127
+        },
+        {
+          "timestamp": "2026-11-18 15:10:27",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/wp-login.php",
+          "message": "GET /wp-login.php 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 128
+        },
+        {
+          "timestamp": "2026-11-18 15:10:36",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/phpmyadmin/",
+          "message": "GET /phpmyadmin/ 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 129
+        },
+        {
+          "timestamp": "2026-11-18 15:10:45",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/backup.sql",
+          "message": "GET /backup.sql 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 130
+        },
+        {
+          "timestamp": "2026-11-18 15:10:54",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/config.php",
+          "message": "GET /config.php 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 131
+        },
+        {
+          "timestamp": "2026-11-18 15:11:03",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/server-status",
+          "message": "GET /server-status 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 132
+        },
+        {
+          "timestamp": "2026-11-18 15:12:51",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/.aws/credentials",
+          "message": "GET /.aws/credentials 403",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 144
+        },
+        {
+          "timestamp": "2026-11-18 15:11:12",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/old/",
+          "message": "GET /old/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 133
+        },
+        {
+          "timestamp": "2026-11-18 15:11:21",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/test/",
+          "message": "GET /test/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 134
+        },
+        {
+          "timestamp": "2026-11-18 15:11:30",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/dev/",
+          "message": "GET /dev/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 135
+        },
+        {
+          "timestamp": "2026-11-18 15:11:39",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/api/v1/users",
+          "message": "GET /api/v1/users 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 136
+        },
+        {
+          "timestamp": "2026-11-18 15:11:48",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/api/v2/",
+          "message": "GET /api/v2/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 137
+        },
+        {
+          "timestamp": "2026-11-18 15:11:57",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/uploads/",
+          "message": "GET /uploads/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 138
+        },
+        {
+          "timestamp": "2026-11-18 15:12:06",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/cgi-bin/",
+          "message": "GET /cgi-bin/ 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 139
+        },
+        {
+          "timestamp": "2026-11-18 15:12:15",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/admin.php",
+          "message": "GET /admin.php 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 140
+        },
+        {
+          "timestamp": "2026-11-18 15:12:24",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/login.jsp",
+          "message": "GET /login.jsp 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 141
+        },
+        {
+          "timestamp": "2026-11-18 15:12:33",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/debug",
+          "message": "GET /debug 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 142
+        },
+        {
+          "timestamp": "2026-11-18 15:12:42",
+          "source_ip": "198.51.100.23",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 404,
+          "http_method": "GET",
+          "url_path": "/console",
+          "message": "GET /console 404",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 143
+        }
+      ],
+      "event_count": 22,
+      "recommendations": [
+        "Check whether any probed resource returned 200 (possible exposure).",
+        "Verify that sensitive files (.env, .git, backups) are not publicly reachable.",
+        "Review application logs for errors triggered by the malicious requests.",
+        "Report confirmed exposures to the application owner for remediation."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1595.003",
+          "name": "Active Scanning: Wordlist Scanning",
+          "tactics": [
+            "Reconnaissance"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1595/003/",
+          "rationale": "Requests for many or well-known sensitive paths are consistent with wordlist-based content discovery."
+        },
+        {
+          "technique_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "tactics": [
+            "Initial Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1190/",
+          "rationale": "Exploit-like request strings indicate an ATTEMPT to exploit a public-facing application; success is not implied."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-BE690CC299",
+      "rule_id": "HTTP-001",
+      "rule_name": "Repeated HTTP 401/403 Responses",
+      "severity": "High",
+      "risk_score": 71,
+      "priority": "P2",
+      "risk_factors": [
+        {
+          "reason": "Base score for High severity",
+          "points": 65
+        },
+        {
+          "reason": "Volume: 25 supporting events",
+          "points": 6
+        }
+      ],
+      "timestamp": "2026-11-18 09:32:48",
+      "first_seen": "2026-11-18 09:30:00",
+      "last_seen": "2026-11-18 09:32:48",
+      "source_ip": "203.0.113.99",
+      "username": null,
+      "description": "25 HTTP error responses for 203.0.113.99 (25x 401, 0x 403) between 2026-11-18 09:30:00 and 2026-11-18 09:32:48 (peak 25 within 5 minutes; threshold 10). Top paths: /api/login (25).",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 09:30:00",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 27
+        },
+        {
+          "timestamp": "2026-11-18 09:30:07",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 28
+        },
+        {
+          "timestamp": "2026-11-18 09:30:14",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 29
+        },
+        {
+          "timestamp": "2026-11-18 09:30:21",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 30
+        },
+        {
+          "timestamp": "2026-11-18 09:30:28",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 31
+        },
+        {
+          "timestamp": "2026-11-18 09:30:35",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 32
+        },
+        {
+          "timestamp": "2026-11-18 09:30:42",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 33
+        },
+        {
+          "timestamp": "2026-11-18 09:30:49",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 34
+        },
+        {
+          "timestamp": "2026-11-18 09:30:56",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 35
+        },
+        {
+          "timestamp": "2026-11-18 09:31:03",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 36
+        },
+        {
+          "timestamp": "2026-11-18 09:31:10",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 37
+        },
+        {
+          "timestamp": "2026-11-18 09:31:17",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 39
+        },
+        {
+          "timestamp": "2026-11-18 09:31:24",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 40
+        },
+        {
+          "timestamp": "2026-11-18 09:31:31",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 41
+        },
+        {
+          "timestamp": "2026-11-18 09:31:38",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 42
+        },
+        {
+          "timestamp": "2026-11-18 09:31:45",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 43
+        },
+        {
+          "timestamp": "2026-11-18 09:31:52",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 44
+        },
+        {
+          "timestamp": "2026-11-18 09:31:59",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 09:32:06",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 46
+        },
+        {
+          "timestamp": "2026-11-18 09:32:13",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 09:32:20",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 48
+        },
+        {
+          "timestamp": "2026-11-18 09:32:27",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 49
+        },
+        {
+          "timestamp": "2026-11-18 09:32:34",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 50
+        },
+        {
+          "timestamp": "2026-11-18 09:32:41",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 51
+        },
+        {
+          "timestamp": "2026-11-18 09:32:48",
+          "source_ip": "203.0.113.99",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 401,
+          "http_method": "POST",
+          "url_path": "/api/login",
+          "message": "POST /api/login 401",
+          "file_name": "sample_web_access.jsonl",
+          "line_number": 53
+        }
+      ],
+      "event_count": 25,
+      "recommendations": [
+        "Identify the targeted endpoints and whether they require authentication.",
+        "Check the web/application logs for any 2xx response to the same IP afterwards.",
+        "Review WAF or reverse-proxy logs for the same client.",
+        "Consider (manually) rate-limiting the endpoint if abuse is confirmed."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110",
+          "name": "Brute Force",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/",
+          "rationale": "25 of 25 responses were 401s on authentication endpoints, consistent with credential guessing against web login."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-691CF07CDC",
+      "rule_id": "AUTH-004",
+      "rule_name": "Unusual Login Time",
+      "severity": "Medium",
+      "risk_score": 70,
+      "priority": "P2",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 03:05:30",
+      "first_seen": "2026-11-18 03:05:30",
+      "last_seen": "2026-11-18 03:05:30",
+      "source_ip": "203.0.113.12",
+      "username": "root",
+      "description": "1 successful login(s) for 'root' from 203.0.113.12 on 2026-11-18 outside business hours (07:00-20:00 UTC) (first at 2026-11-18 03:05:30 UTC). The account is privileged. Unusual timing alone is not evidence of compromise.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 03:05:30",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Accepted password for root from 203.0.113.12 port 50100 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 13
+        }
+      ],
+      "event_count": 1,
+      "recommendations": [
+        "Verify with the user or their manager whether off-hours work was expected.",
+        "Check the source IP against the user's usual locations and devices.",
+        "Correlate with other alerts for the same user or IP."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-BD06507176",
+      "rule_id": "AUTH-004",
+      "rule_name": "Unusual Login Time",
+      "severity": "Medium",
+      "risk_score": 70,
+      "priority": "P2",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 02:20:10",
+      "first_seen": "2026-11-18 02:20:10",
+      "last_seen": "2026-11-18 02:20:10",
+      "source_ip": "203.0.113.45",
+      "username": "admin",
+      "description": "1 successful login(s) for 'admin' from 203.0.113.45 on 2026-11-18 outside business hours (07:00-20:00 UTC) (first at 2026-11-18 02:20:10 UTC). The account is privileged. Unusual timing alone is not evidence of compromise.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 02:20:10",
+          "source_ip": "203.0.113.45",
+          "username": "admin",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login success for admin",
+          "file_name": "sample_app_auth.json",
+          "line_number": 41
+        }
+      ],
+      "event_count": 1,
+      "recommendations": [
+        "Verify with the user or their manager whether off-hours work was expected.",
+        "Check the source IP against the user's usual locations and devices.",
+        "Correlate with other alerts for the same user or IP."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-0C1C38FBFF",
+      "rule_id": "AUTH-001",
+      "rule_name": "Repeated Failed Login Attempts",
+      "severity": "Medium",
+      "risk_score": 65,
+      "priority": "P2",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Privileged account involved",
+          "points": 5
+        },
+        {
+          "reason": "Correlated with 3 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 03:04:40",
+      "first_seen": "2026-11-18 03:02:00",
+      "last_seen": "2026-11-18 03:04:40",
+      "source_ip": "203.0.113.12",
+      "username": "root",
+      "description": "9 failed login attempts from 203.0.113.12 over 2.7 minutes (peak 9 within a 10-minute window; threshold 5). Targeted account(s): root.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 03:02:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 3
+        },
+        {
+          "timestamp": "2026-11-18 03:02:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 4
+        },
+        {
+          "timestamp": "2026-11-18 03:02:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 5
+        },
+        {
+          "timestamp": "2026-11-18 03:03:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 6
+        },
+        {
+          "timestamp": "2026-11-18 03:03:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 8
+        },
+        {
+          "timestamp": "2026-11-18 03:03:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50005 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 9
+        },
+        {
+          "timestamp": "2026-11-18 03:04:00",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50006 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 10
+        },
+        {
+          "timestamp": "2026-11-18 03:04:20",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50007 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 11
+        },
+        {
+          "timestamp": "2026-11-18 03:04:40",
+          "source_ip": "203.0.113.12",
+          "username": "root",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for root from 203.0.113.12 port 50008 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 12
+        }
+      ],
+      "event_count": 9,
+      "recommendations": [
+        "Confirm whether the source IP belongs to a known user, VPN, or internal scanner.",
+        "Check whether any login from this IP later succeeded (see AUTH-002).",
+        "Review the targeted account(s) for lockouts and recent password resets.",
+        "If unexplained, escalate per your incident process; consider rate-limiting or MFA (manual decision)."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110.001",
+          "name": "Brute Force: Password Guessing",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/001/",
+          "rationale": "9 password failures from 203.0.113.12 against 1 account(s) is consistent with password guessing."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-43E2CED8C3",
+      "rule_id": "AUTH-001",
+      "rule_name": "Repeated Failed Login Attempts",
+      "severity": "Medium",
+      "risk_score": 60,
+      "priority": "P3",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 21:33:02",
+      "first_seen": "2026-11-18 21:30:02",
+      "last_seen": "2026-11-18 21:33:02",
+      "source_ip": "198.51.100.200",
+      "username": "guest, oracle, postgres, test, ubuntu",
+      "description": "5 failed login attempts from 198.51.100.200 over 3.0 minutes (peak 5 within a 10-minute window; threshold 5). Targeted account(s): guest, oracle, postgres, test, ubuntu.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 21:30:02",
+          "source_ip": "198.51.100.200",
+          "username": "test",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user test from 198.51.100.200 port 41000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 21:30:47",
+          "source_ip": "198.51.100.200",
+          "username": "oracle",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user oracle from 198.51.100.200 port 41001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 21:31:32",
+          "source_ip": "198.51.100.200",
+          "username": "guest",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user guest from 198.51.100.200 port 41002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 49
+        },
+        {
+          "timestamp": "2026-11-18 21:32:17",
+          "source_ip": "198.51.100.200",
+          "username": "ubuntu",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user ubuntu from 198.51.100.200 port 41003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 51
+        },
+        {
+          "timestamp": "2026-11-18 21:33:02",
+          "source_ip": "198.51.100.200",
+          "username": "postgres",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user postgres from 198.51.100.200 port 41004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 53
+        }
+      ],
+      "event_count": 5,
+      "recommendations": [
+        "Confirm whether the source IP belongs to a known user, VPN, or internal scanner.",
+        "Check whether any login from this IP later succeeded (see AUTH-002).",
+        "Review the targeted account(s) for lockouts and recent password resets.",
+        "If unexplained, escalate per your incident process; consider rate-limiting or MFA (manual decision)."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110",
+          "name": "Brute Force",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/",
+          "rationale": "5 failures from 198.51.100.200 across 5 accounts is consistent with brute-force activity (see AUTH-003 for spraying)."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-E17802A5E5",
+      "rule_id": "AUTH-001",
+      "rule_name": "Repeated Failed Login Attempts",
+      "severity": "Medium",
+      "risk_score": 60,
+      "priority": "P3",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Source IP is on the local watchlist",
+          "points": 10
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 13:09:40",
+      "first_seen": "2026-11-18 13:05:00",
+      "last_seen": "2026-11-18 13:09:40",
+      "source_ip": "198.51.100.77",
+      "username": "alice, bob, carol, dave, erin (+3 more)",
+      "description": "8 failed login attempts from 198.51.100.77 over 4.7 minutes (peak 8 within a 10-minute window; threshold 5). Targeted account(s): alice, bob, carol, dave, erin (+3 more).",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 13:05:00",
+          "source_ip": "198.51.100.77",
+          "username": "alice",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for alice: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 42
+        },
+        {
+          "timestamp": "2026-11-18 13:05:40",
+          "source_ip": "198.51.100.77",
+          "username": "bob",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for bob: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 43
+        },
+        {
+          "timestamp": "2026-11-18 13:06:20",
+          "source_ip": "198.51.100.77",
+          "username": "carol",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for carol: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 44
+        },
+        {
+          "timestamp": "2026-11-18 13:07:00",
+          "source_ip": "198.51.100.77",
+          "username": "dave",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for dave: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 13:07:40",
+          "source_ip": "198.51.100.77",
+          "username": "erin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for erin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 46
+        },
+        {
+          "timestamp": "2026-11-18 13:08:20",
+          "source_ip": "198.51.100.77",
+          "username": "frank",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for frank: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 13:09:00",
+          "source_ip": "198.51.100.77",
+          "username": "grace",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for grace: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 48
+        },
+        {
+          "timestamp": "2026-11-18 13:09:40",
+          "source_ip": "198.51.100.77",
+          "username": "heidi",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for heidi: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 49
+        }
+      ],
+      "event_count": 8,
+      "recommendations": [
+        "Confirm whether the source IP belongs to a known user, VPN, or internal scanner.",
+        "Check whether any login from this IP later succeeded (see AUTH-002).",
+        "Review the targeted account(s) for lockouts and recent password resets.",
+        "If unexplained, escalate per your incident process; consider rate-limiting or MFA (manual decision)."
+      ],
+      "mitre": [
+        {
+          "technique_id": "T1110",
+          "name": "Brute Force",
+          "tactics": [
+            "Credential Access"
+          ],
+          "url": "https://attack.mitre.org/techniques/T1110/",
+          "rationale": "8 failures from 198.51.100.77 across 8 accounts is consistent with brute-force activity (see AUTH-003 for spraying)."
+        }
+      ],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-42146510EF",
+      "rule_id": "NET-001",
+      "rule_name": "Watchlisted Source IP Activity",
+      "severity": "Medium",
+      "risk_score": 53,
+      "priority": "P3",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Volume: 10 supporting events",
+          "points": 3
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 21:30:00",
+      "first_seen": "2026-11-18 21:30:00",
+      "last_seen": "2026-11-18 21:33:02",
+      "source_ip": "198.51.100.200",
+      "username": "guest, oracle, postgres, test, ubuntu",
+      "description": "Source IP 198.51.100.200 matches local watchlist entry 198.51.100.200. 10 event(s) observed between 2026-11-18 21:30:00 and 2026-11-18 21:33:02 (5 auth_failure, 5 system). No automatic blocking was performed.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 21:30:00",
+          "source_ip": "198.51.100.200",
+          "username": "test",
+          "event_type": "system",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Invalid user test from 198.51.100.200 port 41000",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 44
+        },
+        {
+          "timestamp": "2026-11-18 21:30:02",
+          "source_ip": "198.51.100.200",
+          "username": "test",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user test from 198.51.100.200 port 41000 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 21:30:45",
+          "source_ip": "198.51.100.200",
+          "username": "oracle",
+          "event_type": "system",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Invalid user oracle from 198.51.100.200 port 41001",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 46
+        },
+        {
+          "timestamp": "2026-11-18 21:30:47",
+          "source_ip": "198.51.100.200",
+          "username": "oracle",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user oracle from 198.51.100.200 port 41001 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 21:31:30",
+          "source_ip": "198.51.100.200",
+          "username": "guest",
+          "event_type": "system",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Invalid user guest from 198.51.100.200 port 41002",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 48
+        },
+        {
+          "timestamp": "2026-11-18 21:31:32",
+          "source_ip": "198.51.100.200",
+          "username": "guest",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user guest from 198.51.100.200 port 41002 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 49
+        },
+        {
+          "timestamp": "2026-11-18 21:32:15",
+          "source_ip": "198.51.100.200",
+          "username": "ubuntu",
+          "event_type": "system",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Invalid user ubuntu from 198.51.100.200 port 41003",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 50
+        },
+        {
+          "timestamp": "2026-11-18 21:32:17",
+          "source_ip": "198.51.100.200",
+          "username": "ubuntu",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user ubuntu from 198.51.100.200 port 41003 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 51
+        },
+        {
+          "timestamp": "2026-11-18 21:33:00",
+          "source_ip": "198.51.100.200",
+          "username": "postgres",
+          "event_type": "system",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Invalid user postgres from 198.51.100.200 port 41004",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 52
+        },
+        {
+          "timestamp": "2026-11-18 21:33:02",
+          "source_ip": "198.51.100.200",
+          "username": "postgres",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Failed password for invalid user postgres from 198.51.100.200 port 41004 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 53
+        }
+      ],
+      "event_count": 10,
+      "recommendations": [
+        "Review why the IP is on the watchlist and when the entry was added.",
+        "Inspect every event from this IP and identify the accounts or URLs involved.",
+        "If a login succeeded, validate it with the account owner immediately.",
+        "Do not block automatically - document findings and follow your change process."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-DCC3D2E9C0",
+      "rule_id": "NET-001",
+      "rule_name": "Watchlisted Source IP Activity",
+      "severity": "Medium",
+      "risk_score": 50,
+      "priority": "P3",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Correlated with 2 other rule(s) for the same IP",
+          "points": 10
+        }
+      ],
+      "timestamp": "2026-11-18 13:05:00",
+      "first_seen": "2026-11-18 13:05:00",
+      "last_seen": "2026-11-18 13:09:40",
+      "source_ip": "198.51.100.77",
+      "username": "alice, bob, carol, dave, erin (+3 more)",
+      "description": "Source IP 198.51.100.77 matches local watchlist entry 198.51.100.77. 8 event(s) observed between 2026-11-18 13:05:00 and 2026-11-18 13:09:40 (8 auth_failure). No automatic blocking was performed.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 13:05:00",
+          "source_ip": "198.51.100.77",
+          "username": "alice",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for alice: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 42
+        },
+        {
+          "timestamp": "2026-11-18 13:05:40",
+          "source_ip": "198.51.100.77",
+          "username": "bob",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for bob: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 43
+        },
+        {
+          "timestamp": "2026-11-18 13:06:20",
+          "source_ip": "198.51.100.77",
+          "username": "carol",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for carol: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 44
+        },
+        {
+          "timestamp": "2026-11-18 13:07:00",
+          "source_ip": "198.51.100.77",
+          "username": "dave",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for dave: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 45
+        },
+        {
+          "timestamp": "2026-11-18 13:07:40",
+          "source_ip": "198.51.100.77",
+          "username": "erin",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for erin: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 46
+        },
+        {
+          "timestamp": "2026-11-18 13:08:20",
+          "source_ip": "198.51.100.77",
+          "username": "frank",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for frank: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 47
+        },
+        {
+          "timestamp": "2026-11-18 13:09:00",
+          "source_ip": "198.51.100.77",
+          "username": "grace",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for grace: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 48
+        },
+        {
+          "timestamp": "2026-11-18 13:09:40",
+          "source_ip": "198.51.100.77",
+          "username": "heidi",
+          "event_type": "auth_failure",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Login failed for heidi: bad password",
+          "file_name": "sample_app_auth.json",
+          "line_number": 49
+        }
+      ],
+      "event_count": 8,
+      "recommendations": [
+        "Review why the IP is on the watchlist and when the entry was added.",
+        "Inspect every event from this IP and identify the accounts or URLs involved.",
+        "If a login succeeded, validate it with the account owner immediately.",
+        "Do not block automatically - document findings and follow your change process."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-97F09FA5BA",
+      "rule_id": "HTTP-001",
+      "rule_name": "Repeated HTTP 401/403 Responses",
+      "severity": "Medium",
+      "risk_score": 43,
+      "priority": "P3",
+      "risk_factors": [
+        {
+          "reason": "Base score for Medium severity",
+          "points": 40
+        },
+        {
+          "reason": "Volume: 12 supporting events",
+          "points": 3
+        }
+      ],
+      "timestamp": "2026-11-18 16:21:51",
+      "first_seen": "2026-11-18 16:20:01",
+      "last_seen": "2026-11-18 16:21:51",
+      "source_ip": "203.0.113.140",
+      "username": null,
+      "description": "12 HTTP error responses for 203.0.113.140 (0x 401, 12x 403) between 2026-11-18 16:20:01 and 2026-11-18 16:21:51 (peak 12 within 5 minutes; threshold 10). Top paths: /admin (12).",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 16:20:01",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:01 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 29
+        },
+        {
+          "timestamp": "2026-11-18 16:20:11",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:11 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 30
+        },
+        {
+          "timestamp": "2026-11-18 16:20:21",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:21 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 31
+        },
+        {
+          "timestamp": "2026-11-18 16:20:31",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:31 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 33
+        },
+        {
+          "timestamp": "2026-11-18 16:20:41",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:41 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 34
+        },
+        {
+          "timestamp": "2026-11-18 16:20:51",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:20:51 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 35
+        },
+        {
+          "timestamp": "2026-11-18 16:21:01",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:01 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 36
+        },
+        {
+          "timestamp": "2026-11-18 16:21:11",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:11 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 37
+        },
+        {
+          "timestamp": "2026-11-18 16:21:21",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:21 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 38
+        },
+        {
+          "timestamp": "2026-11-18 16:21:31",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:31 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 39
+        },
+        {
+          "timestamp": "2026-11-18 16:21:41",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:41 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 40
+        },
+        {
+          "timestamp": "2026-11-18 16:21:51",
+          "source_ip": "203.0.113.140",
+          "username": null,
+          "event_type": "http_request",
+          "status_code": 403,
+          "http_method": "GET",
+          "url_path": "/admin",
+          "message": "203.0.113.140 - - [18/Nov/2026:16:21:51 +0000] \"GET /admin HTTP/1.1\" 403 153 \"-\" \"Mozilla/5.0\"",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 41
+        }
+      ],
+      "event_count": 12,
+      "recommendations": [
+        "Identify the targeted endpoints and whether they require authentication.",
+        "Check the web/application logs for any 2xx response to the same IP afterwards.",
+        "Review WAF or reverse-proxy logs for the same client.",
+        "Consider (manually) rate-limiting the endpoint if abuse is confirmed."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-E8E600D7B0",
+      "rule_id": "AUTH-004",
+      "rule_name": "Unusual Login Time",
+      "severity": "Low",
+      "risk_score": 20,
+      "priority": "P4",
+      "risk_factors": [
+        {
+          "reason": "Base score for Low severity",
+          "points": 15
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        }
+      ],
+      "timestamp": "2026-11-21 10:15:07",
+      "first_seen": "2026-11-21 10:15:07",
+      "last_seen": "2026-11-21 10:15:07",
+      "source_ip": "192.0.2.12",
+      "username": "carol",
+      "description": "1 successful login(s) for 'carol' from 192.0.2.12 on 2026-11-21 on a weekend (first at 2026-11-21 10:15:07 UTC). Unusual timing alone is not evidence of compromise.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-21 10:15:07",
+          "source_ip": "192.0.2.12",
+          "username": "carol",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "Accepted publickey for carol from 192.0.2.12 port 51515 ssh2",
+          "file_name": "sample_linux_auth.log",
+          "line_number": 54
+        }
+      ],
+      "event_count": 1,
+      "recommendations": [
+        "Verify with the user or their manager whether off-hours work was expected.",
+        "Check the source IP against the user's usual locations and devices.",
+        "Correlate with other alerts for the same user or IP."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    },
+    {
+      "alert_id": "ALT-9DDB06619F",
+      "rule_id": "AUTH-004",
+      "rule_name": "Unusual Login Time",
+      "severity": "Low",
+      "risk_score": 20,
+      "priority": "P4",
+      "risk_factors": [
+        {
+          "reason": "Base score for Low severity",
+          "points": 15
+        },
+        {
+          "reason": "A successful authentication is part of the evidence",
+          "points": 5
+        }
+      ],
+      "timestamp": "2026-11-18 23:40:12",
+      "first_seen": "2026-11-18 23:40:12",
+      "last_seen": "2026-11-18 23:40:12",
+      "source_ip": "192.0.2.11",
+      "username": "bob",
+      "description": "1 successful login(s) for 'bob' from 192.0.2.11 on 2026-11-18 outside business hours (07:00-20:00 UTC) (first at 2026-11-18 23:40:12 UTC). Unusual timing alone is not evidence of compromise.",
+      "evidence": [
+        {
+          "timestamp": "2026-11-18 23:40:12",
+          "source_ip": "192.0.2.11",
+          "username": "bob",
+          "event_type": "auth_success",
+          "status_code": null,
+          "http_method": null,
+          "url_path": null,
+          "message": "User login success for bob",
+          "file_name": "sample_app_auth.json",
+          "line_number": 50
+        }
+      ],
+      "event_count": 1,
+      "recommendations": [
+        "Verify with the user or their manager whether off-hours work was expected.",
+        "Check the source IP against the user's usual locations and devices.",
+        "Correlate with other alerts for the same user or IP."
+      ],
+      "mitre": [],
+      "status": "New",
+      "created_at": "2026-11-19 05:25:07",
+      "updated_at": "2026-11-19 05:25:07",
+      "run_id": 1,
+      "analyst_notes": []
+    }
+  ]
+}
